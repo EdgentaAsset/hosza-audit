@@ -1,0 +1,29 @@
+.bnav {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 11px 8px calc(6px + env(safe-area-inset-bottom));
+}
+.bnav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--muted);
+}
+.bnav-item.on {
+  color: var(--indigo-600);
+  font-weight: 800;
+}
+.bnav-pill {
+  width: 26px;
+  height: 3.5px;
+  border-radius: var(--r-chip);
+  background: transparent;
+}
+.bnav-item.on .bnav-pill {
+  background: var(--indigo-600);
+}

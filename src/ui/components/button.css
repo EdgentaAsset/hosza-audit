@@ -1,0 +1,51 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: var(--r-btn);
+  font-size: var(--fs-body);
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.btn-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--grad-accent);
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+}
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-float);
+}
+.btn-ghost {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.btn-danger {
+  background: var(--st-issue-bg);
+  border: 1px solid var(--st-issue-line);
+  color: var(--st-issue);
+}
+
+.btn-icononly {
+  width: 46px;
+  padding: 0;
+  flex: 0 0 auto;
+}

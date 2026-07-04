@@ -1,0 +1,74 @@
+/* Reset & asas — Audit Aset HoSZA v3 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: var(--fs-input);
+  color: inherit;
+}
+
+/* Jangan buang cincin fokus — aksesibiliti papan kekunci */
+:focus-visible {
+  outline: 3px solid var(--indigo-300);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Hormati tetapan kurangkan-gerakan */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.hide {
+  display: none !important;
+}
+
+/* Saiz teks boleh laras (Tetapan > Saiz teks) */
+:root[data-textsize='besar'] {
+  --fs-caption: 13px;
+  --fs-small: 14px;
+  --fs-body: 15.5px;
+  --fs-input: 16.5px;
+  --fs-title: 17.5px;
+  --fs-h2: 19px;
+  --fs-h1: 21px;
+}

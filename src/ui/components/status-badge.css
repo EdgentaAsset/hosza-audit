@@ -1,0 +1,32 @@
+.sbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--r-chip);
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.sb-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sbadge-belum {
+  background: var(--st-belum-bg);
+  color: var(--st-belum);
+}
+.sbadge-done {
+  background: var(--st-done-bg);
+  color: var(--st-done);
+}
+.sbadge-pending {
+  background: var(--st-pending-bg);
+  color: var(--st-pending);
+}
+.sbadge-issue {
+  background: var(--st-issue-bg);
+  color: var(--st-issue);
+}

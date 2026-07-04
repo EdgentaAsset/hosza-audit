@@ -1,0 +1,25 @@
+{
+  "name": "hosza-audit",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gen:icons": "node scripts/gen-icons.mjs"
+  },
+  "devDependencies": {
+    "@tabler/icons": "^3.44.0",
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@zxing/browser": "^0.2.0",
+    "xlsx": "^0.18.5"
+  }
+}

@@ -1,0 +1,40 @@
+.fchip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+}
+.fchip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.fchip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform 0.08s ease;
+}
+.fchip:active {
+  transform: scale(0.96);
+}
+.fchip.on {
+  background: var(--grad-accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgba(109, 40, 217, 0.3);
+}
+.fchip-n {
+  opacity: 0.75;
+  font-weight: 800;
+}

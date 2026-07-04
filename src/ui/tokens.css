@@ -1,0 +1,145 @@
+/* ============================================================
+   Design tokens — Audit Aset HoSZA v3
+   Gaya: estetik bulat-lembut (rujuk memori projek rebuild-plan.md)
+   Font Nunito · aksen indigo gradient · bayang lembut ungu ·
+   warna status: ungu=belum, hijau=selesai, oren=menunggu, merah=bermasalah
+   ============================================================ */
+:root {
+  /* ---- Aksen indigo (jenama app) ---- */
+  --indigo-50: #f5f3ff;
+  --indigo-100: #ede9fe;
+  --indigo-200: #ddd6fe;
+  --indigo-300: #c4b5fd;
+  --indigo-400: #a78bfa;
+  --indigo-500: #8b5cf6;
+  --indigo-600: #7c3aed;
+  --indigo-700: #6d28d9;
+  --indigo-800: #5b21b6;
+  --indigo-900: #4c1d95;
+  --grad-accent: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+
+  /* ---- Neutral ---- */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+
+  /* ---- Semantik permukaan & teks ---- */
+  --bg: #f4f4f8;
+  --surface: #ffffff;
+  --surface-soft: var(--gray-100);
+  --ink: var(--gray-900);
+  --ink-soft: var(--gray-700);
+  --muted: var(--gray-500);
+  --faint: var(--gray-400);
+  --line: var(--gray-200);
+  --line-strong: var(--gray-300);
+
+  /* ---- Status audit ----
+     belum   = indigo (belum diaudit)
+     done    = hijau (selesai + disahkan)
+     pending = oren  (menunggu sync)
+     issue   = merah (bermasalah)                              */
+  --st-belum: var(--indigo-600);
+  --st-belum-bg: var(--indigo-100);
+  --st-belum-line: var(--indigo-200);
+  --st-done: #15803d;
+  --st-done-bg: #dcfce7;
+  --st-done-line: #bbf7d0;
+  --st-pending: #c2410c;
+  --st-pending-bg: #ffedd5;
+  --st-pending-line: #fed7aa;
+  --st-issue: #b91c1c;
+  --st-issue-bg: #fee2e2;
+  --st-issue-line: #fecaca;
+
+  /* ---- Tipografi ---- */
+  --font: 'Nunito', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-caption: 11.5px;
+  --fs-small: 12.5px;
+  --fs-body: 14px;
+  --fs-input: 15px;
+  --fs-title: 16px;
+  --fs-h2: 17.5px;
+  --fs-h1: 19px;
+
+  /* ---- Jejari ---- */
+  --r-chip: 999px;
+  --r-input: 14px;
+  --r-btn: 15px;
+  --r-tile: 16px;
+  --r-card: 22px;
+  --r-sheet: 28px;
+
+  /* ---- Bayang lembut (condong ungu) ---- */
+  --shadow-card: 0 8px 24px rgba(109, 40, 217, 0.07);
+  --shadow-card-done: 0 8px 24px rgba(21, 128, 61, 0.07);
+  --shadow-card-pending: 0 8px 24px rgba(194, 65, 12, 0.07);
+  --shadow-btn: 0 8px 18px rgba(109, 40, 217, 0.32);
+  --shadow-tile: 0 8px 18px rgba(109, 40, 217, 0.35);
+  --shadow-float: 0 4px 12px rgba(76, 29, 149, 0.08);
+  --shadow-sheet: 0 20px 50px rgba(76, 29, 149, 0.12);
+
+  /* ---- Jarak (asas 4px) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+
+  /* ---- Saiz sentuhan minimum ---- */
+  --touch: 44px;
+}
+
+/* Mod gelap — token bertukar, komponen tak perlu tahu */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='auto'],
+  :root[data-theme='dark'] {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-soft: #232734;
+    --ink: #eef0f6;
+    --ink-soft: #c8cdd9;
+    --muted: #8b91a3;
+    --faint: #6a7082;
+    --line: #2c3040;
+    --line-strong: #3a3f52;
+    --st-belum-bg: rgba(124, 58, 237, 0.18);
+    --st-belum-line: rgba(139, 92, 246, 0.4);
+    --st-belum: var(--indigo-300);
+    --st-done-bg: rgba(21, 128, 61, 0.18);
+    --st-done-line: rgba(34, 197, 94, 0.35);
+    --st-done: #4ade80;
+    --st-pending-bg: rgba(194, 65, 12, 0.18);
+    --st-pending-line: rgba(249, 115, 22, 0.35);
+    --st-pending: #fb923c;
+    --st-issue-bg: rgba(185, 28, 28, 0.18);
+    --st-issue-line: rgba(239, 68, 68, 0.35);
+    --st-issue: #f87171;
+    --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-card-done: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-card-pending: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-sheet: 0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Paksa mod gelap tanpa mengira sistem */
+:root[data-theme='dark'] {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-soft: #232734;
+  --ink: #eef0f6;
+  --ink-soft: #c8cdd9;
+  --muted: #8b91a3;
+  --faint: #6a7082;
+  --line: #2c3040;
+  --line-strong: #3a3f52;
+}

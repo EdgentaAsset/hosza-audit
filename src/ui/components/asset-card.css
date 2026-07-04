@@ -1,0 +1,155 @@
+.acard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+.acard-body {
+  flex: 1;
+  min-width: 0;
+}
+.acard-chev {
+  color: var(--faint);
+  flex: 0 0 auto;
+  display: flex;
+}
+
+/* Bingkai & warna no. aset ikut status */
+.acard-belum {
+  border-color: var(--st-belum-line);
+}
+.acard-belum .acard-no {
+  color: var(--st-belum);
+}
+.acard-done {
+  border-color: var(--st-done-line);
+  box-shadow: var(--shadow-card-done);
+}
+.acard-done .acard-no {
+  color: var(--st-done);
+}
+.acard-pending {
+  border-color: var(--st-pending-line);
+  box-shadow: var(--shadow-card-pending);
+}
+.acard-pending .acard-no {
+  color: var(--st-pending);
+}
+.acard-issue {
+  border-color: var(--st-issue-line);
+}
+.acard-issue .acard-no {
+  color: var(--st-issue);
+}
+
+.acard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.acard-no {
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.acard-name {
+  margin: 7px 0 0;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  line-height: 1.3;
+}
+.acard-meta {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.acard-meta svg {
+  flex: 0 0 auto;
+  color: var(--faint);
+}
+.acard-meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acard-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.acard-space {
+  flex: 1;
+}
+.acard-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.acard-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+.acard-thumb-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft);
+  color: var(--faint);
+}
+.acard-slot {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  border: 1.5px dashed var(--line-strong);
+  color: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.acard-slot:active {
+  transform: scale(0.94);
+}
+
+/* Kad aktif — dibesarkan */
+.acard-active {
+  border: 1px solid var(--st-belum-line);
+  box-shadow: var(--shadow-card);
+}
+.acard-active.acard-belum {
+  border-color: var(--indigo-200);
+}
+.acard-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+.acard-actions:empty {
+  display: none;
+}
+.acard-actions .btn-primary {
+  flex: 1;
+}

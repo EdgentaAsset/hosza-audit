@@ -1,0 +1,118 @@
+/* Galeri komponen — halaman rujukan dev & design-sync */
+.gal {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+.gal-h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+.gal-sub {
+  color: var(--muted);
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+.gal-section {
+  margin-top: 40px;
+}
+.gal-section > h2 {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 14px;
+}
+.gal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+}
+.gal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 420px;
+}
+.gal-phones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+/* Bingkai telefon untuk komposisi skrin penuh */
+.phone {
+  width: 375px;
+  border-radius: var(--r-sheet);
+  background: var(--bg);
+  box-shadow: var(--shadow-sheet);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.phone-label {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.phone main {
+  padding: 17px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.phone .gtop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 0;
+}
+.phone .gtop-titles {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+.phone .gtop-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 800;
+}
+.phone .gtop-sub {
+  margin: 1px 0 0;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--indigo-600);
+}
+.phone .gtop button {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-shadow: var(--shadow-float);
+}
+.phone .gsteps {
+  padding: 20px 22px 0;
+}
+.phone .gfoot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 20px;
+}
+.phone .gfoot-count {
+  flex: 1;
+  text-align: center;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--faint);
+}

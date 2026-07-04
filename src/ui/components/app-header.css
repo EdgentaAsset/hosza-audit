@@ -1,0 +1,68 @@
+.apphead {
+  padding: 20px 18px 0;
+}
+.apphead-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.apphead-tile {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--r-tile);
+  background: var(--grad-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-shadow: var(--shadow-tile);
+}
+.apphead-titles {
+  flex: 1;
+  min-width: 0;
+}
+.apphead-title {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.apphead-sub {
+  margin: 1px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+.apphead-actions {
+  display: flex;
+  gap: 8px;
+}
+.apphead-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-float);
+}
+.apphead-btn:active {
+  transform: scale(0.95);
+}
+.apphead-dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--indigo-600);
+  border: 2px solid var(--surface);
+}
+.apphead-progress {
+  margin-top: 16px;
+}
