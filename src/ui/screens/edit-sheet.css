@@ -1,0 +1,69 @@
+.esheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 23, 0.45);
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.esheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-sheet);
+}
+.esheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.esheet-title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+}
+.esheet-sub {
+  margin: 2px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--indigo-600);
+}
+.esheet-x {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.esheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.esheet-note {
+  width: 100%;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-input);
+  padding: 12px 15px;
+  font-weight: 700;
+  resize: vertical;
+  background: var(--surface);
+  outline: 0;
+}
+.esheet-note:focus {
+  border-color: var(--indigo-400);
+}
+.esheet-foot {
+  margin-top: 18px;
+}

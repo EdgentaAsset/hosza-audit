@@ -20,6 +20,9 @@ import { el, esc } from '../dom';
 import { icon } from '../icons';
 import { dbCount, dbGetAll } from '../../data/db';
 import type { MasterAsset, PpmRecord } from '../../data/masterImport';
+import { listAudits, tickAudit, untickAudit, type AuditRecord } from '../../data/audits';
+import { pendingItems } from '../../sync/outbox';
+import { openEditSheet } from './editSheet';
 import { toast } from '../toast';
 import type { AssetCardData, AuditStatus } from '../../types';
 import './senarai.css';
@@ -31,6 +34,9 @@ type Filter = 'semua' | AuditStatus;
 interface State {
   assets: MasterAsset[];
   ppmScheduled: Set<string>;
+  audits: Map<string, AuditRecord>;
+  /** ASSET NO yang masih ada hantaran menunggu dalam outbox */
+  pendingAssets: Set<string>;
   query: string;
   filter: Filter;
   limit: number;
@@ -40,15 +46,26 @@ interface State {
 const state: State = {
   assets: [],
   ppmScheduled: new Set(),
+  audits: new Map(),
+  pendingAssets: new Set(),
   query: '',
   filter: 'semua',
   limit: BATCH,
   active: null,
 };
 
-/** Status audit aset — buat masa ini semua 'belum' (audits datang di milestone seterusnya). */
-function statusOf(_a: MasterAsset): AuditStatus {
+/** Status paparan: selesai (disahkan) / menunggu sync / belum diaudit. */
+function statusOf(a: MasterAsset): AuditStatus {
+  const rec = state.audits.get(a.asset);
+  if (rec?.checked) return state.pendingAssets.has(a.asset) ? 'pending' : 'done';
   return 'belum';
+}
+
+function auditedLabel(a: MasterAsset): string | undefined {
+  const rec = state.audits.get(a.asset);
+  if (!rec?.checked || !rec.checkedAt) return undefined;
+  const d = new Date(rec.checkedAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' });
+  return rec.by ? `${rec.by} · ${d}` : d;
 }
 
 function cardData(a: MasterAsset): AssetCardData {
@@ -68,6 +85,7 @@ function cardData(a: MasterAsset): AssetCardData {
     ppmScheduled: state.ppmScheduled.has(a.asset),
     photoCount: 0,
     photoTotal: 3,
+    auditedBy: auditedLabel(a),
   };
 }
 
@@ -143,14 +161,18 @@ function pickXlsx(rerender: () => void): void {
 /* ---------- Muat data dari IndexedDB ---------- */
 
 async function loadData(): Promise<void> {
-  const [assets, ppm] = await Promise.all([
+  const [assets, ppm, audits, pending] = await Promise.all([
     dbGetAll<MasterAsset>('assets'),
     dbGetAll<PpmRecord>('ppm'),
+    listAudits(),
+    pendingItems(),
   ]);
   state.assets = assets
     .filter((a) => !a.missing)
     .sort((x, y) => (x.id < y.id ? -1 : 1)); // baris berganda kekal bersebelahan
   state.ppmScheduled = new Set(ppm.filter((p) => p.scheduled === 1).map((p) => p.asset));
+  state.audits = new Map(audits.map((r) => [r.asset, r]));
+  state.pendingAssets = new Set(pending.map((i) => i.asset));
 }
 
 /* ---------- Skrin ---------- */
@@ -162,17 +184,43 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
 
   const rerenderAll = () => renderShell();
 
+  async function refresh(): Promise<void> {
+    await loadData();
+    renderShell();
+  }
+
+  /** Tick pantas melalui butang ⋮ — audit berpandu penuh datang kemudian. */
+  async function quickTick(a: MasterAsset): Promise<void> {
+    const rec = state.audits.get(a.asset);
+    if (rec?.checked) {
+      if (!window.confirm(`Batalkan tanda "Telah Diperiksa" untuk ${a.asset}?`)) return;
+      await untickAudit(a.asset, a.uniza);
+      toast('Tanda diperiksa dibatalkan', '');
+    } else {
+      if (!window.confirm(`Tanda ${a.asset} sebagai "Telah Diperiksa"?`)) return;
+      await tickAudit(a.asset, { uniza: a.uniza });
+      toast('✓ Ditanda diperiksa — akan dihantar ke pusat', 'ok');
+    }
+    await refresh();
+  }
+
   function renderShell(): void {
     scr.innerHTML = '';
     const total = state.assets.length;
+    const checkedNos = new Set(
+      Array.from(state.audits.values())
+        .filter((r) => r.checked)
+        .map((r) => r.asset),
+    );
+    const checkedRows = state.assets.filter((a) => checkedNos.has(a.asset)).length;
 
     scr.appendChild(
       appHeader({
         title: 'Audit aset HoSZA',
         subtitle: total
-          ? `0 / ${total.toLocaleString()} diaudit · v3`
+          ? `${checkedRows.toLocaleString()} / ${total.toLocaleString()} diaudit · ${total ? Math.round((checkedRows / total) * 100) : 0}%`
           : 'Tiada data master — import Data.xlsx',
-        progressPct: 0,
+        progressPct: total ? (checkedRows / total) * 100 : 0,
         actions: [
           { icon: 'upload', ariaLabel: 'Import Data.xlsx', onClick: () => pickXlsx(rerenderAll) },
           { icon: 'settings', ariaLabel: 'Tetapan', onClick: () => toast('Tetapan — milestone seterusnya') },
@@ -262,8 +310,8 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
                 renderList();
               },
               onStart: () => toast('Audit berpandu — milestone seterusnya'),
-              onEdit: () => toast('Edit — milestone seterusnya'),
-              onMore: () => toast('Tindakan lain — milestone seterusnya'),
+              onEdit: () => void openEditSheet(a, refresh),
+              onMore: () => void quickTick(a),
               onAddPhoto: () => toast('Gambar — milestone seterusnya'),
             }),
           );
