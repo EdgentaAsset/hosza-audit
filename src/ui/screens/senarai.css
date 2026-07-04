@@ -1,0 +1,77 @@
+.scr {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.scr-main {
+  flex: 1;
+  padding: 17px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.scr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.scr-count {
+  margin: 2px 2px 0;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--faint);
+}
+.scr-none {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 30px 10px;
+}
+.scr-sentinel {
+  display: flex;
+  justify-content: center;
+  color: var(--faint);
+  padding: 10px 0 16px;
+}
+
+.scr-empty {
+  text-align: center;
+  padding: 56px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.scr-empty-ic {
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  background: var(--st-belum-bg);
+  color: var(--indigo-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.scr-empty-t {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+}
+.scr-empty-s {
+  margin: 0 0 16px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* Sticky nav bawah dalam aliran skrin */
+.scr > .bnav {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+}
