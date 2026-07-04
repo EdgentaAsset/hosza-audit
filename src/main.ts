@@ -7,6 +7,7 @@ import './ui/tokens.css';
 import './ui/base.css';
 import { DbUnavailableError, openDb } from './data/db';
 import { resetStuckSending } from './sync/outbox';
+import { startSyncEngine } from './sync/engine';
 import { mountSenarai } from './ui/screens/senarai';
 import { toast } from './ui/toast';
 
@@ -44,4 +45,5 @@ function showDbError(e: unknown): void {
   if (restored > 0) toast(`⟳ ${restored} hantaran tersekat dipulihkan — akan dihantar semula`, 'ok');
 
   await mountSenarai(app);
+  startSyncEngine();
 })();

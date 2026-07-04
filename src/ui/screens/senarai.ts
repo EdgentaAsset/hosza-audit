@@ -25,6 +25,7 @@ import { pendingItems } from '../../sync/outbox';
 import { openEditSheet } from './editSheet';
 import { openGuided } from './guided';
 import { getPosition } from '../../data/drafts';
+import { getEndpoint, getSession, login, setEndpoint, syncNow } from '../../sync/engine';
 import { toast } from '../toast';
 import type { AssetCardData, AuditStatus } from '../../types';
 import './senarai.css';
@@ -191,6 +192,31 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
     renderShell();
   }
 
+  // ponytail: tetapan via prompt() — skrin Tetapan/Akaun penuh datang di
+  // milestone Akaun; ini cukup untuk sambung backend hari ini.
+  async function openSettings(): Promise<void> {
+    const ep = window.prompt('URL Web App Apps Script (/exec):', getEndpoint());
+    if (ep === null) return;
+    setEndpoint(ep);
+    if (!getEndpoint()) return;
+    if (!getSession()) {
+      const u = window.prompt('Username:');
+      const p = u ? window.prompt('Password:') : null;
+      if (u && p) {
+        try {
+          const s = await login(u, p);
+          toast(`✓ Log masuk sebagai ${s.name} (${s.role})`, 'ok');
+        } catch (e) {
+          toast(e instanceof Error ? e.message : 'Log masuk gagal', 'err');
+          return;
+        }
+      }
+    }
+    const sum = await syncNow();
+    if (!sum.skipped) toast(`⟳ Sync: ${sum.confirmed} disahkan, ${sum.failed} gagal`, sum.failed ? 'err' : 'ok');
+    await refresh();
+  }
+
   /** Tick pantas melalui butang ⋮ — audit berpandu penuh datang kemudian. */
   async function quickTick(a: MasterAsset): Promise<void> {
     const rec = state.audits.get(a.asset);
@@ -225,7 +251,7 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
         progressPct: total ? (checkedRows / total) * 100 : 0,
         actions: [
           { icon: 'upload', ariaLabel: 'Import Data.xlsx', onClick: () => pickXlsx(rerenderAll) },
-          { icon: 'settings', ariaLabel: 'Tetapan', onClick: () => toast('Tetapan — milestone seterusnya') },
+          { icon: 'settings', ariaLabel: 'Tetapan', onClick: () => void openSettings() },
         ],
       }),
     );
@@ -343,6 +369,9 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
       }),
     );
   }
+
+  // Kad "Menunggu sync" bertukar "Selesai" sebaik enjin dapat resit
+  window.addEventListener('hosza:sync', () => void refresh());
 
   // Lukis rangka DULU (responsif serta-merta), kemudian isi data.
   renderShell();
