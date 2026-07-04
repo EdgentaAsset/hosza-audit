@@ -17,6 +17,8 @@ describe.skipIf(!available)('Data.xlsx sebenar', () => {
     const data = parseMasterXlsx(new Uint8Array(readFileSync(PATH)));
     // PANDUAN.md app lama: "Mengandungi 6,321 aset + PPM"
     expect(data.assets.length).toBe(6321);
+    // Setiap baris ada id unik — baris berganda dikekalkan bila disimpan
+    expect(new Set(data.assets.map((a) => a.id)).size).toBe(6321);
     expect(data.ppm.length).toBeGreaterThan(0);
     // Setiap aset ada nombor; format majoriti SZA#####F
     const valid = data.assets.filter((a) => /^SZA\d{5}F$/i.test(a.asset)).length;

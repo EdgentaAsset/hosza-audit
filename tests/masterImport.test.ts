@@ -91,6 +91,28 @@ describe('parseMasterXlsx', () => {
   });
 });
 
+describe('baris berganda DIKEKALKAN seadanya (keputusan user)', () => {
+  it('nombor aset sama dua kali → dua baris, id unik, ditanda dup', () => {
+    const data = parseMasterXlsx(
+      buildWorkbook([A1, { ...A1, locno: 'LOKASI-LAIN' }, A2]),
+    );
+    expect(data.assets).toHaveLength(3);
+    expect(data.assets.map((a) => a.id)).toEqual(['SZA00001F', 'SZA00001F~2', 'SZA00002F']);
+    expect(data.assets[0].dup).toBe(1);
+    expect(data.assets[1].dup).toBe(1);
+    expect(data.assets[2].dup).toBeUndefined();
+  });
+
+  it('applyMaster menyimpan SEMUA baris berganda ke storan + kira duplicates', async () => {
+    const res = await applyMaster(parseMasterXlsx(buildWorkbook([A1, A1, A2])));
+    expect(res.total).toBe(3);
+    expect(res.duplicates).toBe(2);
+    const rows = await dbGetAll<MasterAsset>('assets');
+    expect(rows).toHaveLength(3);
+    expect(rows.filter((r) => r.asset === 'SZA00001F')).toHaveLength(2);
+  });
+});
+
 describe('diffMaster — laporan perbandingan sebelum sahkan', () => {
   it('mengira tambah / buang / ubah dengan betul', () => {
     const oldAssets = parseMasterXlsx(buildWorkbook([A1, A2])).assets;

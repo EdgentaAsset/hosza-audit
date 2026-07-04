@@ -30,6 +30,7 @@ describe('lapisan DB', () => {
 
   it('bulkPut menulis banyak rekod dalam satu transaksi', async () => {
     const rows = Array.from({ length: 500 }, (_, i) => ({
+      id: `SZA${String(i).padStart(5, '0')}F`,
       asset: `SZA${String(i).padStart(5, '0')}F`,
       name: `Aset ${i}`,
     }));

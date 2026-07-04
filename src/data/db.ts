@@ -8,10 +8,10 @@
  */
 
 export const DB_NAME = 'hosza-audit';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export type StoreName =
-  | 'assets' // data master aset (keyPath: asset)
+  | 'assets' // data master aset (keyPath: id — baris BERGANDA dikekalkan seadanya; index: asset)
   | 'ppm' // jadual PPM per aset (keyPath: asset)
   | 'audits' // keadaan audit tempatan (keyPath: asset)
   | 'photos' // gambar/thumbnail (keyPath: id = `${asset}:${kind}`)
@@ -48,9 +48,18 @@ function openRaw(): Promise<IDBDatabase> {
       reject(new DbUnavailableError(e));
       return;
     }
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (ev) => {
       const db = request.result;
-      if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets', { keyPath: 'asset' });
+      // v2: assets berkunci 'id' (bukan 'asset') supaya baris berganda dalam
+      // Data.xlsx dikekalkan seadanya (keputusan user). Data master boleh
+      // diimport semula, jadi store lama selamat dibuang.
+      if (ev.oldVersion > 0 && ev.oldVersion < 2 && db.objectStoreNames.contains('assets')) {
+        db.deleteObjectStore('assets');
+      }
+      if (!db.objectStoreNames.contains('assets')) {
+        const as = db.createObjectStore('assets', { keyPath: 'id' });
+        as.createIndex('asset', 'asset');
+      }
       if (!db.objectStoreNames.contains('ppm')) db.createObjectStore('ppm', { keyPath: 'asset' });
       if (!db.objectStoreNames.contains('audits')) db.createObjectStore('audits', { keyPath: 'asset' });
       if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });

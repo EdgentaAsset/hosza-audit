@@ -119,7 +119,8 @@ async function importFromBuffer(buf: ArrayBuffer, rerender: () => void): Promise
     }
   }
   const res = await applyMaster(parsed);
-  toast(`✓ Data master v${res.version} — ${res.total.toLocaleString()} aset`, 'ok');
+  const dupNote = res.duplicates ? ` (${res.duplicates} baris nombor berganda dikekalkan)` : '';
+  toast(`✓ Data master v${res.version} — ${res.total.toLocaleString()} aset${dupNote}`, 'ok');
   await loadData();
   rerender();
 }
@@ -148,7 +149,7 @@ async function loadData(): Promise<void> {
   ]);
   state.assets = assets
     .filter((a) => !a.missing)
-    .sort((x, y) => (x.asset < y.asset ? -1 : 1));
+    .sort((x, y) => (x.id < y.id ? -1 : 1)); // baris berganda kekal bersebelahan
   state.ppmScheduled = new Set(ppm.filter((p) => p.scheduled === 1).map((p) => p.asset));
 }
 
@@ -251,13 +252,13 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
         );
         const frag = document.createDocumentFragment();
         for (const a of shown) {
-          const isActive = state.active === a.asset;
+          const isActive = state.active === a.id;
           frag.appendChild(
             assetCard({
               data: cardData(a),
               active: isActive,
               onOpen: () => {
-                state.active = a.asset;
+                state.active = a.id;
                 renderList();
               },
               onStart: () => toast('Audit berpandu — milestone seterusnya'),

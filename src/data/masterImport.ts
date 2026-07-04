@@ -15,6 +15,12 @@ import * as XLSX from 'xlsx';
 import { dbBulkPut, dbClear, dbGetAll, metaSet } from './db';
 
 export interface MasterAsset {
+  /**
+   * Kunci unik baris. Baris pertama sesuatu ASSET NO: id = asset;
+   * baris BERGANDA seterusnya: `asset~2`, `asset~3`, ... — duplicate dalam
+   * Data.xlsx DIKEKALKAN seadanya (keputusan user: papar data sebagaimana fail).
+   */
+  id: string;
   asset: string;
   uniza: string;
   typedesc: string;
@@ -31,6 +37,8 @@ export interface MasterAsset {
   manuf: string;
   g1: string;
   g2: string;
+  /** 1 = nombor aset ini muncul lebih dari sekali dalam fail */
+  dup?: 1;
   /** 1 = tiada dalam master terkini (dikekalkan untuk siasatan, bukan dipadam) */
   missing?: 1;
 }
@@ -101,12 +109,16 @@ export function parseMasterXlsx(buf: ArrayBuffer | Uint8Array): MasterData {
   }
   const rowsA = XLSX.utils.sheet_to_json<unknown[]>(wsA, { header: 1, defval: null });
   const assets: MasterAsset[] = [];
+  const seen = new Map<string, number>(); // ASSET NO -> kali dilihat
   for (let r = 3; r < rowsA.length; r++) {
     const row = rowsA[r];
     if (!row) continue;
     const asset = clean(row[0]);
     if (!asset) continue;
+    const n = (seen.get(asset) ?? 0) + 1;
+    seen.set(asset, n);
     assets.push({
+      id: n === 1 ? asset : `${asset}~${n}`,
       asset,
       g1: clean(row[1]),
       g2: clean(row[2]),
@@ -127,6 +139,10 @@ export function parseMasterXlsx(buf: ArrayBuffer | Uint8Array): MasterData {
   }
   if (assets.length === 0) {
     throw new MasterParseError('Tiada aset dijumpai dalam "AssetDetails" — semak susunan fail.');
+  }
+  // Tanda baris yang nombornya berganda (papar seadanya, tapi boleh dilaporkan)
+  for (const a of assets) {
+    if ((seen.get(a.asset) ?? 0) > 1) a.dup = 1;
   }
   const validNo = assets.filter((a) => ASSET_RE.test(a.asset)).length;
   if (validNo < assets.length * 0.5) {
@@ -202,20 +218,20 @@ const COMPARE_KEYS: (keyof MasterAsset)[] = [
   'workgroup', 'make', 'brand', 'model', 'serial', 'manuf', 'g1', 'g2',
 ];
 
-/** Banding master sedia ada (dalam peranti) dengan data baharu. */
+/** Banding master sedia ada (dalam peranti) dengan data baharu — ikut id baris. */
 export function diffMaster(oldAssets: MasterAsset[], next: MasterData): MasterDiff {
-  const oldMap = new Map(oldAssets.filter((a) => !a.missing).map((a) => [a.asset, a]));
+  const oldMap = new Map(oldAssets.filter((a) => !a.missing).map((a) => [a.id, a]));
   const added: string[] = [];
   const changed: string[] = [];
   let unchanged = 0;
   for (const a of next.assets) {
-    const old = oldMap.get(a.asset);
+    const old = oldMap.get(a.id);
     if (!old) {
-      added.push(a.asset);
+      added.push(a.id);
       continue;
     }
-    oldMap.delete(a.asset);
-    if (COMPARE_KEYS.some((k) => (old[k] ?? '') !== (a[k] ?? ''))) changed.push(a.asset);
+    oldMap.delete(a.id);
+    if (COMPARE_KEYS.some((k) => (old[k] ?? '') !== (a[k] ?? ''))) changed.push(a.id);
     else unchanged++;
   }
   return {
@@ -234,6 +250,8 @@ export interface ApplyResult {
   version: string;
   total: number;
   missingKept: number;
+  /** Bilangan baris yang nombor asetnya berganda dalam fail */
+  duplicates: number;
 }
 
 /**
@@ -242,10 +260,11 @@ export interface ApplyResult {
  */
 export async function applyMaster(next: MasterData): Promise<ApplyResult> {
   const current = await dbGetAll<MasterAsset>('assets');
-  const nextKeys = new Set(next.assets.map((a) => a.asset));
+  const nextKeys = new Set(next.assets.map((a) => a.id));
   const keepMissing = current
-    .filter((a) => !nextKeys.has(a.asset))
+    .filter((a) => !nextKeys.has(a.id))
     .map((a) => ({ ...a, missing: 1 as const }));
+  const duplicates = next.assets.filter((a) => a.dup).length;
 
   await dbClear('assets');
   await dbBulkPut('assets', [...next.assets, ...keepMissing]);
@@ -256,7 +275,13 @@ export async function applyMaster(next: MasterData): Promise<ApplyResult> {
     assets: next.assets.length,
     ppm: next.ppm.length,
     missingKept: keepMissing.length,
+    duplicates,
     appliedAt: Date.now(),
   });
-  return { version: next.version, total: next.assets.length, missingKept: keepMissing.length };
+  return {
+    version: next.version,
+    total: next.assets.length,
+    missingKept: keepMissing.length,
+    duplicates,
+  };
 }
