@@ -23,6 +23,8 @@ import type { MasterAsset, PpmRecord } from '../../data/masterImport';
 import { listAudits, tickAudit, untickAudit, type AuditRecord } from '../../data/audits';
 import { pendingItems } from '../../sync/outbox';
 import { openEditSheet } from './editSheet';
+import { openGuided } from './guided';
+import { getPosition } from '../../data/drafts';
 import { toast } from '../toast';
 import type { AssetCardData, AuditStatus } from '../../types';
 import './senarai.css';
@@ -309,7 +311,7 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
                 state.active = a.id;
                 renderList();
               },
-              onStart: () => toast('Audit berpandu — milestone seterusnya'),
+              onStart: () => void openGuided(a, refresh),
               onEdit: () => void openEditSheet(a, refresh),
               onMore: () => void quickTick(a),
               onAddPhoto: () => toast('Gambar — milestone seterusnya'),
@@ -347,6 +349,13 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
   if ((await dbCount('assets')) > 0) {
     await loadData();
     renderShell();
+
+    // Sambung audit yang terputus (app dibunuh semasa audit berpandu)
+    const pos = await getPosition();
+    if (pos?.screen === 'guided' && pos.asset) {
+      const a = state.assets.find((x) => x.asset === pos.asset);
+      if (a) void openGuided(a, refresh);
+    }
   }
 
   // Cangkuk dev untuk verifikasi automatik (dibuang dalam build produksi)

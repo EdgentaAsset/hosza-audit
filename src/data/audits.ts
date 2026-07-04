@@ -5,7 +5,7 @@
  */
 import { dbGet, dbGetAll, dbPut } from './db';
 import { enqueue } from '../sync/outbox';
-import { clearDraft } from './drafts';
+import { clearDraft, clearPosition } from './drafts';
 
 export interface AuditRecord {
   asset: string;
@@ -82,6 +82,34 @@ export async function untickAudit(asset: string, uniza?: string): Promise<AuditR
   rec.checked = false;
   rec.checkedAt = undefined;
   return persistAndQueue(rec, uniza);
+}
+
+/**
+ * Siapkan audit berpandu: satu rekod lengkap (tick + pembetulan + semakan
+ * 5 bahagian) dalam SATU hantaran. Draf & kedudukan dibersihkan.
+ */
+export async function completeGuided(
+  asset: string,
+  opts: {
+    fields?: Record<string, string>;
+    note?: string;
+    semakan?: Record<string, string>;
+    uniza?: string;
+    by?: string;
+  },
+): Promise<AuditRecord> {
+  const rec: AuditRecord = (await getAudit(asset)) ?? { asset, checked: false, updatedAt: 0 };
+  rec.checked = true;
+  rec.checkedAt = new Date().toISOString();
+  rec.method = 'Berpandu';
+  if (opts.by) rec.by = opts.by;
+  if (opts.fields && Object.keys(opts.fields).length) rec.edits = { ...rec.edits, ...opts.fields };
+  if (opts.note !== undefined && opts.note !== '') rec.note = opts.note;
+  if (opts.semakan) rec.semakan = { ...rec.semakan, ...opts.semakan };
+  const saved = await persistAndQueue(rec, opts.uniza);
+  await clearDraft(asset);
+  await clearPosition();
+  return saved;
 }
 
 /** Simpan pembetulan medan + catatan. Draf aset itu dibersihkan. */

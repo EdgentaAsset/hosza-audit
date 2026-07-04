@@ -24,12 +24,16 @@ export interface OutboxItem<P = unknown> {
   attempts: number;
   lastError?: string;
   createdAt: number;
+  /** Turutan monotonic dalam sesi — pemecah seri bila createdAt sama ms */
+  seq: number;
   updatedAt: number;
 }
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+let seqCounter = 0;
 
 /** Masukkan kerja baharu ke peti keluar. Pulangkan id item. */
 export async function enqueue<P>(kind: OutboxKind, asset: string, payload: P): Promise<string> {
@@ -42,6 +46,7 @@ export async function enqueue<P>(kind: OutboxKind, asset: string, payload: P): P
     status: 'pending',
     attempts: 0,
     createdAt: now,
+    seq: ++seqCounter,
     updatedAt: now,
   };
   await dbPut('outbox', item);
@@ -67,7 +72,7 @@ export async function pendingItems(): Promise<OutboxItem[]> {
   const all = await dbGetAll<OutboxItem>('outbox');
   return all
     .filter((i) => i.status === 'pending' || i.status === 'failed')
-    .sort((a, b) => a.createdAt - b.createdAt);
+    .sort((a, b) => a.createdAt - b.createdAt || (a.seq ?? 0) - (b.seq ?? 0));
 }
 
 export async function allItems(): Promise<OutboxItem[]> {
