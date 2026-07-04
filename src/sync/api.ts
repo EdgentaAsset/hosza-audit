@@ -22,13 +22,13 @@ export interface ApiErr {
 export type ApiResponse<T = unknown> = (ApiOk<T> | ApiErr) & Record<string, unknown>;
 
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    /** 'network' = tak sampai server · 'server' = server jawab ralat · 'parse' = jawapan bukan JSON */
-    public readonly kind: 'network' | 'server' | 'parse',
-  ) {
+  /** 'network' = tak sampai server · 'server' = server jawab ralat · 'parse' = jawapan bukan JSON */
+  readonly kind: 'network' | 'server' | 'parse';
+
+  constructor(message: string, kind: 'network' | 'server' | 'parse') {
     super(message);
     this.name = 'ApiError';
+    this.kind = kind;
   }
 }
 
