@@ -13,6 +13,7 @@ import { getDraft, saveDraft, savePosition } from '../../data/drafts';
 import { completeGuided, getAudit } from '../../data/audits';
 import { addPhoto, photosOf, pickImage, MAIN_KINDS, KIND_LABEL, type PhotoRec } from '../../data/photos';
 import { openScanner } from '../../scanner/scan';
+import { getSession } from '../../sync/engine';
 import type { MasterAsset } from '../../data/masterImport';
 import { toast } from '../toast';
 import './guided.css';
@@ -369,6 +370,7 @@ export async function openGuided(a: MasterAsset, onDone: () => void): Promise<vo
             note,
             semakan: ctx.sem,
             uniza: ctx.fields['uniza'] ?? a.uniza,
+            by: getSession()?.name,
           });
           toast('✓ Audit berpandu selesai — akan dihantar ke pusat', 'ok');
           close(false);

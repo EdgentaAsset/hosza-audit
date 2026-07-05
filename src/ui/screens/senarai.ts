@@ -27,6 +27,8 @@ import { openGuided } from './guided';
 import { getPosition } from '../../data/drafts';
 import { getEndpoint, getSession, login, setEndpoint, syncNow } from '../../sync/engine';
 import { addPhoto, allPhotos, MAIN_KINDS, pickImage, type PhotoRec } from '../../data/photos';
+import { renderAkaun, renderAktiviti, renderRingkasan } from './tabs';
+import type { OutboxItem } from '../../sync/outbox';
 import { toast } from '../toast';
 import type { AssetCardData, AuditStatus } from '../../types';
 import './senarai.css';
@@ -42,10 +44,12 @@ interface State {
   photos: Map<string, PhotoRec[]>;
   /** ASSET NO yang masih ada hantaran menunggu dalam outbox */
   pendingAssets: Set<string>;
+  outboxItems: OutboxItem[];
   query: string;
   filter: Filter;
   limit: number;
   active: string | null;
+  tab: string;
 }
 
 const state: State = {
@@ -54,10 +58,12 @@ const state: State = {
   audits: new Map(),
   photos: new Map(),
   pendingAssets: new Set(),
+  outboxItems: [],
   query: '',
   filter: 'semua',
   limit: BATCH,
   active: null,
+  tab: 'senarai',
 };
 
 /** Status paparan: selesai (disahkan) / menunggu sync / belum diaudit. */
@@ -187,6 +193,7 @@ async function loadData(): Promise<void> {
   state.ppmScheduled = new Set(ppm.filter((p) => p.scheduled === 1).map((p) => p.asset));
   state.audits = new Map(audits.map((r) => [r.asset, r]));
   state.pendingAssets = new Set(pending.map((i) => i.asset));
+  state.outboxItems = pending;
 }
 
 /* ---------- Skrin ---------- */
@@ -228,8 +235,16 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
     await refresh();
   }
 
+  /** Tindakan tulis perlu log masuk (End User = baca sahaja — kebenaran v0). */
+  function requireLogin(): boolean {
+    if (getSession()) return true;
+    toast('Log masuk di tab Akaun untuk membuat audit', 'err');
+    return false;
+  }
+
   /** Ambil gambar untuk slot kosong seterusnya (Aset → Nameplate → Keseluruhan). */
   async function snapPhoto(a: MasterAsset): Promise<void> {
+    if (!requireLogin()) return;
     const have = new Set((state.photos.get(a.asset) ?? []).map((p) => p.kind));
     const kind = MAIN_KINDS.find((k) => !have.has(k));
     if (!kind) return;
@@ -243,6 +258,7 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
 
   /** Tick pantas melalui butang ⋮ — audit berpandu penuh datang kemudian. */
   async function quickTick(a: MasterAsset): Promise<void> {
+    if (!requireLogin()) return;
     const rec = state.audits.get(a.asset);
     if (rec?.checked) {
       if (!window.confirm(`Batalkan tanda "Telah Diperiksa" untuk ${a.asset}?`)) return;
@@ -250,7 +266,7 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
       toast('Tanda diperiksa dibatalkan', '');
     } else {
       if (!window.confirm(`Tanda ${a.asset} sebagai "Telah Diperiksa"?`)) return;
-      await tickAudit(a.asset, { uniza: a.uniza });
+      await tickAudit(a.asset, { uniza: a.uniza, by: getSession()?.name });
       toast('✓ Ditanda diperiksa — akan dihantar ke pusat', 'ok');
     }
     await refresh();
@@ -283,7 +299,37 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
     const main = el(`<main class="scr-main"></main>`);
     scr.appendChild(main);
 
-    if (total === 0) {
+    if (state.tab === 'ringkasan') {
+      main.appendChild(
+        renderRingkasan({
+          assets: state.assets,
+          audits: state.audits,
+          pendingCount: state.outboxItems.length,
+        }),
+      );
+    } else if (state.tab === 'aktiviti') {
+      main.appendChild(
+        renderAktiviti({
+          audits: Array.from(state.audits.values()),
+          outbox: state.outboxItems,
+          onSync: async () => {
+            const sum = await syncNow();
+            toast(
+              sum.skipped
+                ? 'Sync dilangkau — semak talian/log masuk'
+                : `⟳ ${sum.confirmed} disahkan, ${sum.failed} gagal`,
+              sum.failed ? 'err' : '',
+            );
+            await refresh();
+          },
+        }),
+      );
+    } else if (state.tab === 'akaun') {
+      void renderAkaun({
+        onChanged: () => void refresh(),
+        onImport: () => pickXlsx(rerenderAll),
+      }).then((n) => main.appendChild(n));
+    } else if (total === 0) {
       const empty = el(`
         <div class="scr-empty">
           <span class="scr-empty-ic">${icon('cloud-upload', 34)}</span>
@@ -367,8 +413,12 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
                 state.active = a.id;
                 renderList();
               },
-              onStart: () => void openGuided(a, refresh),
-              onEdit: () => void openEditSheet(a, refresh),
+              onStart: () => {
+                if (requireLogin()) void openGuided(a, refresh);
+              },
+              onEdit: () => {
+                if (requireLogin()) void openEditSheet(a, refresh);
+              },
               onMore: () => void quickTick(a),
               onAddPhoto: () => void snapPhoto(a),
             }),
@@ -392,9 +442,10 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
     scr.appendChild(
       bottomNav({
         items: APP_NAV,
-        activeId: 'senarai',
+        activeId: state.tab,
         onSelect: (id) => {
-          if (id !== 'senarai') toast('Tab ini datang di milestone seterusnya');
+          state.tab = id;
+          renderShell();
         },
       }),
     );

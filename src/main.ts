@@ -9,9 +9,10 @@ import { DbUnavailableError, openDb } from './data/db';
 import { resetStuckSending } from './sync/outbox';
 import { startSyncEngine } from './sync/engine';
 import { mountSenarai } from './ui/screens/senarai';
+import { applyPrefs } from './ui/screens/tabs';
 import { toast } from './ui/toast';
 
-document.documentElement.dataset.theme = 'auto';
+applyPrefs();
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 

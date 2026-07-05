@@ -55,6 +55,16 @@ export async function login(username: string, password: string): Promise<Session
   return s;
 }
 
+/** Log keluar: batal token server (best-effort) + buang sesi peranti. */
+export async function logout(): Promise<void> {
+  try {
+    await api().post('logout', {});
+  } catch {
+    /* offline pun tak apa — token dibatalkan Administrator bila perlu */
+  }
+  clearSession();
+}
+
 /** Satu pusingan sync. Selamat dipanggil bila-bila (skip kalau tiada endpoint/sesi/talian). */
 export async function syncNow(): Promise<ProcessSummary> {
   if (!navigator.onLine || !getEndpoint() || !getSession()?.token) {
