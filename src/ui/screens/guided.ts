@@ -11,6 +11,8 @@ import { button, formField, guidedStepCard, stepTracker, GUIDED_STEPS } from '..
 import type { StepAnswer } from '../components';
 import { getDraft, saveDraft, savePosition } from '../../data/drafts';
 import { completeGuided, getAudit } from '../../data/audits';
+import { addPhoto, photosOf, pickImage, MAIN_KINDS, KIND_LABEL, type PhotoRec } from '../../data/photos';
+import { openScanner } from '../../scanner/scan';
 import type { MasterAsset } from '../../data/masterImport';
 import { toast } from '../toast';
 import './guided.css';
@@ -30,6 +32,7 @@ const SEM_LABEL: Record<string, string> = {
 export async function openGuided(a: MasterAsset, onDone: () => void): Promise<void> {
   const audit = await getAudit(a.asset);
   const draft = await getDraft(a.asset);
+  let photos: PhotoRec[] = await photosOf(a.asset);
 
   const ctx = {
     step: Math.min(Math.max(draft?.guidedStep ?? 1, 1), 7),
@@ -127,7 +130,12 @@ export async function openGuided(a: MasterAsset, onDone: () => void): Promise<vo
             value: cur,
             original: String(a.uniza ?? ''),
             scan: true,
-            onScan: () => toast('Imbas kod — milestone seterusnya'),
+            onScan: () =>
+              void openScanner((v) => {
+                ctx.fields['uniza'] = v;
+                void persist();
+                render();
+              }),
             onInput: fieldInput('uniza'),
           }),
         ],
@@ -214,7 +222,12 @@ export async function openGuided(a: MasterAsset, onDone: () => void): Promise<vo
             value: cs,
             original: String(a.serial ?? ''),
             scan: true,
-            onScan: () => toast('Imbas kod — milestone seterusnya'),
+            onScan: () =>
+              void openScanner((v) => {
+                ctx.fields['serial'] = v;
+                void persist();
+                render();
+              }),
             onInput: fieldInput('serial'),
           }),
         ],
@@ -223,19 +236,43 @@ export async function openGuided(a: MasterAsset, onDone: () => void): Promise<vo
       });
     }
     if (s === 5) {
+      const tiles = el(`<div class="gph"></div>`);
+      for (const kind of MAIN_KINDS) {
+        const p = photos.find((x) => x.kind === kind);
+        const tile = el(`
+          <button type="button" class="gph-tile" aria-label="Ambil gambar ${esc(KIND_LABEL[kind])}">
+            ${p ? `<img src="${p.thumb}" alt="" />` : icon('camera', 22)}
+            <span>${esc(KIND_LABEL[kind])}</span>
+          </button>
+        `);
+        tile.addEventListener('click', async () => {
+          const file = await pickImage();
+          if (!file) return;
+          toast('Memproses gambar…', '');
+          await addPhoto(a.asset, kind, file);
+          photos = await photosOf(a.asset);
+          ctx.sem.gambar = 'Diambil'; // langkah selesai bila ada >=1 gambar
+          await persist();
+          render();
+          toast('✓ Gambar disimpan — akan dimuat naik', 'ok');
+        });
+        tiles.appendChild(tile);
+      }
       return guidedStepCard({
         icon: 'camera',
         title: 'Gambar aset',
-        desc: 'Kamera & muat naik gambar dibina di milestone seterusnya. Buat masa ini langkah ini boleh dilangkau — rekod semakan lain tetap lengkap.',
+        desc: 'Ambil gambar No. Aset, nameplate dan keseluruhan. Satu pun cukup untuk teruskan.',
+        body: [tiles],
         answers: [
           {
-            label: 'Langkau buat masa ini',
+            label: 'Langkau — tiada gambar',
             icon: 'chevron-right',
             kind: 'warn',
             selected: ctx.sem.gambar === 'Dilangkau',
             onClick: () => setSem(4, 'Dilangkau'),
           },
         ],
+        caption: photos.length ? `${photos.length} gambar diambil` : undefined,
       });
     }
     if (s === 6) {

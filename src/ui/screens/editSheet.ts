@@ -51,20 +51,26 @@ export async function openEditSheet(a: MasterAsset, onSaved: () => void): Promis
 
   for (const f of FIELDS) {
     const original = String(a[f.master] ?? '');
-    body.appendChild(
-      formField({
-        label: f.label,
-        value: valueOf(f.key, f.master),
-        original,
-        scan: f.scan,
-        onScan: () => toast('Imbas kod — milestone seterusnya'),
-        onInput: (v) => {
-          changed.set(f.key, v);
-          void saveDraft(a.asset, { fields: { [f.key]: v } }); // setiap ketukan
-          updateSaveState();
-        },
-      }),
-    );
+    const fieldEl: HTMLElement = formField({
+      label: f.label,
+      value: valueOf(f.key, f.master),
+      original,
+      scan: f.scan,
+      onScan: () =>
+        void import('../../scanner/scan').then(({ openScanner }) =>
+          openScanner((v) => {
+            const inp = fieldEl.querySelector('input') as HTMLInputElement;
+            inp.value = v;
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+          }),
+        ),
+      onInput: (v) => {
+        changed.set(f.key, v);
+        void saveDraft(a.asset, { fields: { [f.key]: v } }); // setiap ketukan
+        updateSaveState();
+      },
+    });
+    body.appendChild(fieldEl);
   }
 
   // Catatan

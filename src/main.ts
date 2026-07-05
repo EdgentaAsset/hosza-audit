@@ -46,4 +46,9 @@ function showDbError(e: unknown): void {
 
   await mountSenarai(app);
   startSyncEngine();
+
+  // PWA — daftar service worker (produksi sahaja; dev biar panas)
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    void navigator.serviceWorker.register('./sw.js');
+  }
 })();

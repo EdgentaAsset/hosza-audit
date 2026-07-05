@@ -26,6 +26,7 @@ import { openEditSheet } from './editSheet';
 import { openGuided } from './guided';
 import { getPosition } from '../../data/drafts';
 import { getEndpoint, getSession, login, setEndpoint, syncNow } from '../../sync/engine';
+import { addPhoto, allPhotos, MAIN_KINDS, pickImage, type PhotoRec } from '../../data/photos';
 import { toast } from '../toast';
 import type { AssetCardData, AuditStatus } from '../../types';
 import './senarai.css';
@@ -38,6 +39,7 @@ interface State {
   assets: MasterAsset[];
   ppmScheduled: Set<string>;
   audits: Map<string, AuditRecord>;
+  photos: Map<string, PhotoRec[]>;
   /** ASSET NO yang masih ada hantaran menunggu dalam outbox */
   pendingAssets: Set<string>;
   query: string;
@@ -50,6 +52,7 @@ const state: State = {
   assets: [],
   ppmScheduled: new Set(),
   audits: new Map(),
+  photos: new Map(),
   pendingAssets: new Set(),
   query: '',
   filter: 'semua',
@@ -86,8 +89,9 @@ function cardData(a: MasterAsset): AssetCardData {
     dept: a.deptname || '',
     spec,
     ppmScheduled: state.ppmScheduled.has(a.asset),
-    photoCount: 0,
+    photoCount: (state.photos.get(a.asset) ?? []).filter((p) => MAIN_KINDS.includes(p.kind)).length,
     photoTotal: 3,
+    thumbs: (state.photos.get(a.asset) ?? []).map((p) => p.thumb),
     auditedBy: auditedLabel(a),
   };
 }
@@ -164,12 +168,19 @@ function pickXlsx(rerender: () => void): void {
 /* ---------- Muat data dari IndexedDB ---------- */
 
 async function loadData(): Promise<void> {
-  const [assets, ppm, audits, pending] = await Promise.all([
+  const [assets, ppm, audits, pending, photos] = await Promise.all([
     dbGetAll<MasterAsset>('assets'),
     dbGetAll<PpmRecord>('ppm'),
     listAudits(),
     pendingItems(),
+    allPhotos(),
   ]);
+  state.photos = new Map();
+  for (const p of photos) {
+    const arr = state.photos.get(p.asset) ?? [];
+    arr.push(p);
+    state.photos.set(p.asset, arr);
+  }
   state.assets = assets
     .filter((a) => !a.missing)
     .sort((x, y) => (x.id < y.id ? -1 : 1)); // baris berganda kekal bersebelahan
@@ -214,6 +225,19 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
     }
     const sum = await syncNow();
     if (!sum.skipped) toast(`⟳ Sync: ${sum.confirmed} disahkan, ${sum.failed} gagal`, sum.failed ? 'err' : 'ok');
+    await refresh();
+  }
+
+  /** Ambil gambar untuk slot kosong seterusnya (Aset → Nameplate → Keseluruhan). */
+  async function snapPhoto(a: MasterAsset): Promise<void> {
+    const have = new Set((state.photos.get(a.asset) ?? []).map((p) => p.kind));
+    const kind = MAIN_KINDS.find((k) => !have.has(k));
+    if (!kind) return;
+    const file = await pickImage();
+    if (!file) return;
+    toast('Memproses gambar…', '');
+    await addPhoto(a.asset, kind, file);
+    toast('✓ Gambar disimpan — akan dimuat naik', 'ok');
     await refresh();
   }
 
@@ -277,16 +301,22 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
       );
       main.appendChild(empty);
     } else {
-      main.appendChild(
-        searchBar({
-          onInput: (v) => {
-            state.query = v;
-            state.limit = BATCH;
-            renderList();
-          },
-          onScan: () => toast('Imbas kod — milestone seterusnya'),
-        }),
-      );
+      const sb = searchBar({
+        onInput: (v) => {
+          state.query = v;
+          state.limit = BATCH;
+          renderList();
+        },
+        onScan: () =>
+          void import('../../scanner/scan').then(({ openScanner }) =>
+            openScanner((v) => {
+              const inp = sb.querySelector('input') as HTMLInputElement;
+              inp.value = v;
+              inp.dispatchEvent(new Event('input', { bubbles: true }));
+            }),
+          ),
+      });
+      main.appendChild(sb);
       main.appendChild(
         filterChipRow(
           (
@@ -340,7 +370,7 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
               onStart: () => void openGuided(a, refresh),
               onEdit: () => void openEditSheet(a, refresh),
               onMore: () => void quickTick(a),
-              onAddPhoto: () => toast('Gambar — milestone seterusnya'),
+              onAddPhoto: () => void snapPhoto(a),
             }),
           );
         }

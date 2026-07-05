@@ -6,6 +6,7 @@
  */
 import { processOutbox, type ProcessSummary } from './outbox';
 import { createApi } from './api';
+import { setPhotoUrl } from '../data/photos';
 
 const EP_KEY = 'endpoint';
 const SESSION_KEY = 'session';
@@ -62,7 +63,11 @@ export async function syncNow(): Promise<ProcessSummary> {
   const a = api();
   const sum = await processOutbox(async (item) => {
     const r = await a.post(item.kind, item.payload as Record<string, unknown>);
-    return r.ok ? 'confirmed' : 'retry';
+    if (!r.ok) return 'retry';
+    if (item.kind === 'photo' && typeof r.url === 'string' && r.url) {
+      await setPhotoUrl(item.asset, String((item.payload as { kind: string }).kind), r.url);
+    }
+    return 'confirmed';
   });
   if (sum.confirmed > 0) window.dispatchEvent(new CustomEvent('hosza:sync'));
   return sum;
