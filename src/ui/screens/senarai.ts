@@ -25,7 +25,15 @@ import { pendingItems } from '../../sync/outbox';
 import { openEditSheet } from './editSheet';
 import { openGuided } from './guided';
 import { getPosition } from '../../data/drafts';
-import { getEndpoint, getSession, login, setEndpoint, syncNow } from '../../sync/engine';
+import {
+  checkMaster,
+  getEndpoint,
+  getSession,
+  login,
+  pushMaster,
+  setEndpoint,
+  syncNow,
+} from '../../sync/engine';
 import { addPhoto, allPhotos, MAIN_KINDS, pickImage, type PhotoRec } from '../../data/photos';
 import { renderAkaun, renderAktiviti, renderRingkasan } from './tabs';
 import type { OutboxItem } from '../../sync/outbox';
@@ -121,6 +129,9 @@ function filtered(): MasterAsset[] {
   return rows;
 }
 
+/** Import Data.xlsx = tugas Administrator; pengguna lain terima dari pusat. */
+const isAdministrator = (): boolean => getSession()?.role === 'administrator';
+
 /* ---------- Import Data.xlsx (empty state / butang header) ---------- */
 
 async function importFromBuffer(buf: ArrayBuffer, rerender: () => void): Promise<void> {
@@ -152,6 +163,19 @@ async function importFromBuffer(buf: ArrayBuffer, rerender: () => void): Promise
   const res = await applyMaster(parsed);
   const dupNote = res.duplicates ? ` (${res.duplicates} baris nombor berganda dikekalkan)` : '';
   toast(`✓ Data master v${res.version} — ${res.total.toLocaleString()} aset${dupNote}`, 'ok');
+
+  // Edaran berpusat: Administrator hantar master ke server supaya SEMUA
+  // peranti terima automatik pada sync seterusnya (tak perlu import sendiri).
+  if (isAdministrator() && getEndpoint() && navigator.onLine) {
+    toast('Menghantar master ke pusat…', '');
+    try {
+      await pushMaster(parsed);
+      toast('✓ Master diedarkan — semua peranti akan terima automatik', 'ok');
+    } catch {
+      toast('Master disimpan di peranti ini sahaja — hantaran ke pusat gagal. Import semula bila talian stabil.', 'err');
+    }
+  }
+
   await loadData();
   rerender();
 }
@@ -287,10 +311,14 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
         title: 'Audit aset HoSZA',
         subtitle: total
           ? `${checkedRows.toLocaleString()} / ${total.toLocaleString()} diaudit · ${total ? Math.round((checkedRows / total) * 100) : 0}%`
-          : 'Tiada data master — import Data.xlsx',
+          : isAdministrator()
+            ? 'Tiada data master — import Data.xlsx'
+            : 'Menunggu data dari Administrator',
         progressPct: total ? (checkedRows / total) * 100 : 0,
         actions: [
-          { icon: 'upload', ariaLabel: 'Import Data.xlsx', onClick: () => pickXlsx(rerenderAll) },
+          ...(isAdministrator()
+            ? [{ icon: 'upload' as const, ariaLabel: 'Import Data.xlsx', onClick: () => pickXlsx(rerenderAll) }]
+            : []),
           { icon: 'settings', ariaLabel: 'Tetapan', onClick: () => void openSettings() },
         ],
       }),
@@ -330,20 +358,41 @@ export async function mountSenarai(root: HTMLElement): Promise<void> {
         onImport: () => pickXlsx(rerenderAll),
       }).then((n) => main.appendChild(n));
     } else if (total === 0) {
+      const admin = isAdministrator();
       const empty = el(`
         <div class="scr-empty">
           <span class="scr-empty-ic">${icon('cloud-upload', 34)}</span>
           <p class="scr-empty-t">Belum ada data aset</p>
-          <p class="scr-empty-s">Import fail Data.xlsx untuk mula — 6,000+ aset akan disimpan terus dalam peranti ini dan boleh diguna offline.</p>
+          <p class="scr-empty-s">${
+            admin
+              ? 'Import fail Data.xlsx untuk mula — data akan diedarkan ke semua peranti secara automatik.'
+              : 'Data master diedarkan oleh Administrator secara automatik — pastikan anda log masuk di tab Akaun dan ada talian internet.'
+          }</p>
         </div>
       `);
       empty.appendChild(
-        button({
-          label: 'Pilih Data.xlsx',
-          icon: 'upload',
-          variant: 'primary',
-          onClick: () => pickXlsx(rerenderAll),
-        }),
+        admin
+          ? button({
+              label: 'Pilih Data.xlsx',
+              icon: 'upload',
+              variant: 'primary',
+              onClick: () => pickXlsx(rerenderAll),
+            })
+          : button({
+              label: 'Semak sekarang',
+              icon: 'refresh',
+              variant: 'primary',
+              onClick: async () => {
+                toast('Menyemak data master di pusat…', '');
+                const got = await checkMaster();
+                if (got) {
+                  toast('✓ Data master diterima', 'ok');
+                  await refresh();
+                } else {
+                  toast('Belum ada data di pusat — semak log masuk/talian, atau tunggu Administrator', 'err');
+                }
+              },
+            }),
       );
       main.appendChild(empty);
     } else {

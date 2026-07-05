@@ -33,7 +33,8 @@ src/
   data/
     db.ts            IndexedDB — SATU pintu storan. TIADA fallback senyap (DbUnavailableError).
                      Stores: assets(id) ppm audits(asset) photos(id) outbox(id) drafts(asset) meta
-    masterImport.ts  Parser Data.xlsx KETAT (ganti build_data.py) + diff + apply. xlsx LAZY-load.
+    masterImport.ts  Parser Data.xlsx KETAT (ganti build_data.py). xlsx LAZY-load (admin sahaja).
+    masterStore.ts   Jenis + diff + applyMaster TANPA xlsx — peranti penerima edaran guna ini.
     audits.ts        AuditRecord per ASSET NO. tick/untick/saveEdits/completeGuided → dbPut+enqueue.
     drafts.ts        Draf setiap-ketukan + posisi terakhir (resume selepas app dibunuh).
     photos.ts        Kompres canvas 1600px+thumb256, simpan lokal, upload via outbox.
@@ -41,6 +42,7 @@ src/
     outbox.ts        Peti keluar. resetStuckSending() pada boot. seq monotonic. resit = confirmed.
     api.ts           fetch POST text/plain (elak preflight) + GET. Ganti JSONP.
     engine.ts        30s + online listener. login/logout/session/endpoint (localStorage).
+                     checkMaster() setiap sync (edaran master) + pushMaster() (admin).
   scanner/scan.ts    BarcodeDetector native → fallback ZXing (lazy).
   ui/
     tokens.css       Indigo gradient, Nunito, warna status, mod gelap. SUMBER TUNGGAL warna.
@@ -78,33 +80,37 @@ Bila ubah kod sync/draf/audit — JANGAN pecahkan ujian ni. Ia perisai 3 isu tu.
   ungu, warna status ungu/hijau/oren/merah. Rujuk `src/ui/tokens.css`.
 - **Google Sheets kekal** sebagai backend (percuma, admin biasa). Lajur Sheet sama dengan app v2.
 
-## Status (5 Julai 2026) — TERAS PENUH SIAP & LIVE
+## Status (5 Julai 2026) — TERAS PENUH SIAP & LIVE + EDARAN MASTER BERPUSAT
 
 Siap: import xlsx, senarai+carian, tick/edit, audit berpandu 6 langkah, kamera/gambar,
 pengimbas QR, enjin sync, backend Code.gs v2, PWA, tab Ringkasan/Aktiviti/Akaun, login,
-kebenaran v0 (tulis perlu login), mod gelap + saiz teks. 38 ujian. 11 commit.
+kebenaran v0 (tulis perlu login), mod gelap + saiz teks, **edaran master berpusat**. 45 ujian.
 
-**User sudah** siapkan backend Apps Script (Google Sheet + deploy /exec).
-**Tinggal user buat:** tab Akaun → masuk URL /exec + login → import Data.xlsx → uji audit
-sebenar sampai muncul di Google Sheet.
+**Edaran master berpusat (task #24 — SIAP):**
+- `Code.gs`: `mastersave` (POST, administrator sahaja — JSON master → fail Drive folder
+  "HoSZA Master Data", pointer MASTER_VERSION/MASTER_FILE_ID dalam PropertiesService;
+  fail versi lama TAK dipadam = rollback manual), `masterversion` + `master` (GET bertoken).
+- `masterStore.ts` (baru): jenis+diff+apply tanpa xlsx; `masterImport.ts` re-export (parser
+  xlsx kekal lazy 334kB, main chunk 39kB).
+- `engine.ts`: `checkMaster()` dipanggil pada setiap `syncNow` — versi server > lokal
+  (banding rentetan YYYYMMDDHHmm) → muat turun & apply senyap + event `hosza:sync`.
+  `pushMaster()` dipanggil selepas Administrator import xlsx (toast berjaya/gagal).
+- UI: butang import (header + tab Akaun) hanya administrator; empty-state pengguna biasa
+  = "Menunggu data dari Administrator" + butang "Semak sekarang" (panggil checkMaster).
+- Ujian: `tests/masterDistribution.test.ts` (7 ujian — apply versi baru, skip versi sama,
+  offline, tiada sesi, pushMaster).
 
-## SETERUSNYA (mula di sini) — Edaran data master berpusat
+**Tinggal user buat:**
+1. **Salin `backend/Code.gs` baharu ke Apps Script + DEPLOY SEMULA** (New deployment /
+   manage deployments → edit → version baru — kod lama tak ada action master*).
+2. Tab Akaun → login sebagai administrator → import Data.xlsx → sahkan toast
+   "Master diedarkan" → login peranti/browser lain sebagai admin biasa → data muncul
+   automatik (≤30s atau butang Semak sekarang).
 
-**Masalah:** sekarang SETIAP pengguna kena import Data.xlsx sendiri (master di IndexedDB
-tiap peranti). Sepatutnya: Administrator upload sekali → semua peranti terima automatik.
+## SETERUSNYA — pilih dari Fasa 2, atau Fasa 2b edaran
 
-**Rancangan (belum dimulakan, task #24):**
-1. `backend/Code.gs`: action `mastersave` (simpan JSON master sebagai fail Drive, pointer
-   versi dalam PropertiesService), `master` (hidang fail terkini), `masterversion` (versi je).
-   Gate `mastersave` kepada administrator sahaja.
-2. Pecah `masterImport.ts`: keluarkan `applyMaster`/diff/jenis ke `masterStore.ts` (TANPA xlsx)
-   supaya peranti penerima tak muat pustaka Excel 335kB. Parser xlsx kekal di `masterImport.ts`
-   (admin sahaja).
-3. `engine.ts`: `checkMaster()` pada setiap sync — kalau versi server > versi lokal, muat turun
-   & apply senyap.
-4. Butang import (⬆ header + tab Akaun) → hanya nampak untuk administrator. Empty-state pengguna
-   biasa: "Menunggu data dari Administrator", bukan butang import.
-5. Simpan versi lama di Drive (12 versi, rollback) + delta — FASA 2b, boleh tunggu.
+Fasa 2b edaran (sambungan task #24, bila perlu): had 12 versi + UI rollback + delta
+(sekarang muat turun penuh ~1-3MB setiap kemas kini master — ok untuk mingguan/bulanan).
 
 ## Fasa 2 (belum dibina — sebut bila nak)
 

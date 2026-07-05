@@ -227,14 +227,18 @@ export async function renderAkaun(opts: AkaunOpts): Promise<HTMLElement> {
   // Data master
   const counts = await metaGet<{ assets: number; duplicates: number; appliedAt: number }>('masterCounts');
   const dm = el(`<div class="au-set"><h2>Data master</h2></div>`);
+  const version = await metaGet<string>('masterVersion');
   dm.appendChild(
     el(`<p class="au-hint">${
       counts
-        ? `${counts.assets.toLocaleString()} aset · dikemas kini ${new Date(counts.appliedAt).toLocaleDateString('ms-MY')}`
-        : 'Belum diimport'
+        ? `${counts.assets.toLocaleString()} aset · v${esc(version ?? '?')} · dikemas kini ${new Date(counts.appliedAt).toLocaleDateString('ms-MY')}`
+        : 'Belum ada — diedarkan oleh Administrator secara automatik'
     }</p>`),
   );
-  dm.appendChild(button({ label: 'Import Data.xlsx', icon: 'upload', onClick: opts.onImport }));
+  // Import = tugas Administrator; peranti lain terima edaran dari pusat.
+  if (s?.role === 'administrator') {
+    dm.appendChild(button({ label: 'Import Data.xlsx', icon: 'upload', onClick: opts.onImport }));
+  }
   root.appendChild(dm);
 
   return root;

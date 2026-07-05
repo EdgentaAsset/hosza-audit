@@ -53,6 +53,11 @@ function doPost(e) {
       return json_(handleManage_(action, p));
     }
 
+    if (action === 'mastersave') {
+      if (!authAdmin_(p)) return json_({ ok: false, error: 'auth' });
+      return json_(handleMasterSave_(p));
+    }
+
     if (action === 'upsert' || action === 'photo' || action === 'delete') {
       var u = authWriter_(p);
       if (!u) return json_({ ok: false, error: 'auth' });
@@ -74,6 +79,10 @@ function doGet(e) {
     var f = userByToken_(p.token);
     if (!f || f.obj.Status !== 'active') return json_({ ok: false, error: 'auth' });
     var action = p.action || 'all';
+    if (action === 'masterversion') {
+      return json_({ ok: true, version: PropertiesService.getScriptProperties().getProperty('MASTER_VERSION') || '' });
+    }
+    if (action === 'master') return serveMaster_();
     if (action === 'get') {
       var row = findRowObject_(p.asset || '');
       return json_({ ok: true, found: !!row, asset: p.asset, row: row || null });
@@ -175,6 +184,40 @@ function handleDelete_(p) {
     lock.releaseLock();
   }
   return { ok: true, deleted: false };
+}
+
+/* ============ Data master berpusat ============
+ * Administrator upload sekali (mastersave) -> JSON disimpan sebagai fail
+ * Drive, pointer versi dalam PropertiesService. Semua peranti semak
+ * masterversion setiap sync; kalau lebih baru, muat turun action=master.
+ * Fail versi lama TIDAK dipadam (rollback manual dari Drive kalau perlu).
+ */
+var MASTER_FOLDER_NAME = 'HoSZA Master Data';
+
+function getMasterFolder_() {
+  var it = DriveApp.getFoldersByName(MASTER_FOLDER_NAME);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(MASTER_FOLDER_NAME);
+}
+
+function handleMasterSave_(p) {
+  var version = String(p.version || '').trim();
+  if (!version || !p.master) return { ok: false, error: 'no-master' };
+  var blob = Utilities.newBlob(JSON.stringify(p.master), 'application/json', 'master_' + version + '.json');
+  var file = getMasterFolder_().createFile(blob);
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('MASTER_VERSION', version);
+  props.setProperty('MASTER_FILE_ID', file.getId());
+  return { ok: true, version: version };
+}
+
+function serveMaster_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('MASTER_FILE_ID');
+  if (!id) return json_({ ok: false, error: 'no-master' });
+  var content = DriveApp.getFileById(id).getBlob().getDataAsString();
+  // JSON master sudah siap dalam fail — cantum terus, elak parse+stringify semula
+  var out = '{"ok":true,"version":"' + (props.getProperty('MASTER_VERSION') || '') + '","master":' + content + '}';
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
 
 /* ================= Helpers ================= */

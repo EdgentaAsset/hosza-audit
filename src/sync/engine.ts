@@ -7,6 +7,8 @@
 import { processOutbox, type ProcessSummary } from './outbox';
 import { createApi } from './api';
 import { setPhotoUrl } from '../data/photos';
+import { metaGet } from '../data/db';
+import { applyMaster, type MasterData } from '../data/masterStore';
 
 const EP_KEY = 'endpoint';
 const SESSION_KEY = 'session';
@@ -65,6 +67,37 @@ export async function logout(): Promise<void> {
   clearSession();
 }
 
+/* ---------- Edaran data master berpusat ---------- */
+
+/**
+ * Semak versi master di server; kalau lebih baru dari versi lokal, muat
+ * turun & apply SENYAP (pengguna biasa tak perlu import Data.xlsx sendiri).
+ * Selamat dipanggil bila-bila — semua ralat ditelan (cuba lagi sync depan).
+ */
+export async function checkMaster(): Promise<boolean> {
+  if (!navigator.onLine || !getEndpoint() || !getSession()?.token) return false;
+  try {
+    const local = (await metaGet<string>('masterVersion')) ?? '';
+    const v = await api().get({ action: 'masterversion' });
+    if (!v.ok || typeof v.version !== 'string' || !v.version) return false;
+    // Versi = cap masa YYYYMMDDHHmm — banding rentetan sudah kronologi
+    if (v.version <= local) return false;
+    const r = await api().get({ action: 'master' });
+    if (!r.ok || typeof r.master !== 'object' || r.master === null) return false;
+    await applyMaster(r.master as MasterData);
+    window.dispatchEvent(new CustomEvent('hosza:sync'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Hantar master ke server (Administrator sahaja — backend tolak selain itu). */
+export async function pushMaster(data: MasterData): Promise<void> {
+  const r = await api().post('mastersave', { version: data.version, master: data });
+  if (!r.ok) throw new Error(String(r.error));
+}
+
 /** Satu pusingan sync. Selamat dipanggil bila-bila (skip kalau tiada endpoint/sesi/talian). */
 export async function syncNow(): Promise<ProcessSummary> {
   if (!navigator.onLine || !getEndpoint() || !getSession()?.token) {
@@ -80,6 +113,7 @@ export async function syncNow(): Promise<ProcessSummary> {
     return 'confirmed';
   });
   if (sum.confirmed > 0) window.dispatchEvent(new CustomEvent('hosza:sync'));
+  await checkMaster();
   return sum;
 }
 
